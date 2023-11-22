@@ -90,7 +90,7 @@ class PetitionControl(db.Model):
     # petition= db.relationship('Petition', back_populates= 'petitioncontrol')
 
     def __init__(self, process_affected, name_customer, process_customer, status, date_petition_sent, date_petition_received, date_finished_petition, observation, petition_id):
-        self.date_petition : datetime.utcnow()
+        self.date_petition: datetime.utcnow()
         self.process_affected: process_affected
         self.name_customer: name_customer
         self.process_customer: process_customer
@@ -102,7 +102,7 @@ class PetitionControl(db.Model):
         self.petition_id: petition_id
 
     def __repr__(self):
-        return f'<PetitionControl {self.date_petition,self.process_affected, self.name_customer,self.process_customer, self.status, self.date_petition_sent,self.date_petition_received,self.date_finished_petition, self.observation, self.petition_id}>'
+        return f'<PetitionControl {self.date_petition, self.process_affected, self.name_customer,self.process_customer, self.status, self.date_petition_sent,self.date_petition_received,self.date_finished_petition, self.observation, self.petition_id}>'
 
     def serialize(self):
         return{

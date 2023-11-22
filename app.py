@@ -7,7 +7,7 @@ from functools import wraps
 from flask_jwt_extended import create_access_token, current_user, jwt_required, get_jwt_identity, JWTManager, get_current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_httpauth import HTTPBasicAuth
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 load_dotenv()
 
@@ -345,6 +345,7 @@ def delete_petition(petition_id):
 def add_controlp():
     if request.method == 'POST':
         body = request.json
+        date_petition = datetime.strptime(body.get('date_petition', ''), '%Y-%m-%dT%H:%M:%S')
         process_affected = body.get('process_affected', None)
         name_customer = body.get('name_customer', None)
         process_customer = body.get('process_customer', None)
