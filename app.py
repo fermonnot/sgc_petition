@@ -1,7 +1,7 @@
 import os
 from flask import Flask,render_template,request, jsonify, session
 from flask_migrate import Migrate
-from models import db, User, Petition
+from models import db, User, Petition, PetitionControl
 from dotenv import load_dotenv
 from functools import wraps
 from flask_jwt_extended import create_access_token, current_user, jwt_required, get_jwt_identity, JWTManager, get_current_user
@@ -15,7 +15,7 @@ DB_USER= os.getenv("DB_USER")
 DB_URL=os.getenv("DB_URL")
 DB_SECRET_KEY= os.getenv("FLASK_SECRET_KEY")
 
-print({"ESTE ES LAS PASS"},DB_SECRET_KEY)
+
 
 app = Flask(__name__)
 auth = HTTPBasicAuth()
@@ -208,9 +208,8 @@ def login():
 
 @app.route('/logout')
 def logout():
-    # Elimina la información de sesión del usuario
-    db.session.clear()
-    # Redirige al usuario a la página de inicio de sesión u otra página deseada
+    if 'login_user' in db.session:
+        db.session.remove('login_user')
     return jsonify("fue un placer")
 
 
@@ -339,7 +338,36 @@ def delete_petition(petition_id):
                     db.session.rollback()
                     return jsonify({"message":f"Error {error.args}"}),500
 
-                
+
+#ADD CONTROLP 
+@app.route('/controlp', methods=['POST'])
+@jwt_required()
+def add_controlp():
+    if request.method == 'POST':
+        body = request.json
+        process_affected = body.get('process_affected', None)
+        name_customer = body.get('name_customer', None)
+        process_customer = body.get('process_customer', None)
+        status = body.get('status', None)
+        date_petition_sent = body.get('date_petition_sent', None)
+        date_petition_received = body.get('date_petition_received', None)
+        date_finished_petition = body.get ('date_finished_petition', None)
+        observation= body.get('observation', None)
+        petition_id= body.get('petition_id', None)
+        if body is None or process_affected is None or name_customer is None or process_customer is None or status is None or date_petition_sent is None or date_petition_received is None or observation is None:
+            return jsonify ("Por favor verifica que complete todos los campos e intente de nuevo"),404
+        else:
+            request_petition_control = PetitionControl(process_affected=process_affected, name_customer=name_customer, process_customer=process_customer, status=status, date_petition_sent=date_petition_sent, date_petition_received=date_petition_received, date_finished_petition=date_finished_petition, observation=observation, petition_id= int(petition_id))
+            print ("este es el request :", request_petition_control)
+            db.session.add(request_petition_control)
+                           
+            try:
+                db.session.commit()
+                return jsonify("good job bro (Y)!!"), 201
+            except Exception as error:
+                db.session.rollback(),500
+    return jsonify(), 201
+
 
 
 if __name__ == '__main__':
