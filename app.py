@@ -213,10 +213,6 @@ def logout():
     return jsonify("fue un placer")
 
 
-
-
-
-
 #LOGOUT
 # @app.route('/logout', methods=['POST'])
 # @jwt_required  # Requiere autenticación JWT para acceder a esta ruta
@@ -234,7 +230,7 @@ def logout():
 @jwt_required()
 def handle_petition(petition_id = None):
     if request.method == 'GET':
-        user_id= get_jwt_identity()
+        
         if petition_id is None:
             petitions = Petition()
             petitions= petitions.query.all()
@@ -255,7 +251,9 @@ def handle_petition(petition_id = None):
 def add_petition():
     if request.method == 'POST':
         body = request.json
+
         code = body.get('code', None)
+       
         document_title = body.get('document_title', None)
         change_description = body.get('change_description', None)
         change_justify = body.get('change_justify', None)
@@ -337,15 +335,37 @@ def delete_petition(petition_id):
                     print(error.args)
                     db.session.rollback()
                     return jsonify({"message":f"Error {error.args}"}),500
+                
+#CONSULT CONTROLP
+
+@app.route('/controlsp', methods=['GET'])
+@app.route('/controlsp/<int:controlp_id>', methods=['GET'])
+@jwt_required()
+def handle_controlp(controlp_id = None):
+    if request.method == 'GET':
+        
+        if controlp_id is None:
+            controls_p = PetitionControl()
+            controls_p= controls_p.query.all()
+
+            return jsonify(list(map(lambda item: item.serialize(), controls_p))) , 200
+        else:
+            control_p = PetitionControl()
+            control_p = control_p.query.get(controlp_id)
+            if control_p:
+                return jsonify(control_p.serialize())
+            
+        return jsonify({"message":" Petition has not found"}), 404 
+
 
 
 #ADD CONTROLP 
-@app.route('/controlp', methods=['POST'])
+@app.route('/controlsp', methods=['POST'])
 @jwt_required()
 def add_controlp():
     if request.method == 'POST':
         body = request.json
-        date_petition = datetime.strptime(body.get('date_petition', ''), '%Y-%m-%dT%H:%M:%S')
+             
         process_affected = body.get('process_affected', None)
         name_customer = body.get('name_customer', None)
         process_customer = body.get('process_customer', None)
@@ -355,6 +375,7 @@ def add_controlp():
         date_finished_petition = body.get ('date_finished_petition', None)
         observation= body.get('observation', None)
         petition_id= body.get('petition_id', None)
+        
         if body is None or process_affected is None or name_customer is None or process_customer is None or status is None or date_petition_sent is None or date_petition_received is None or observation is None:
             return jsonify ("Por favor verifica que complete todos los campos e intente de nuevo"),404
         else:
@@ -368,6 +389,74 @@ def add_controlp():
             except Exception as error:
                 db.session.rollback(),500
     return jsonify(), 201
+
+
+#UPDATE CONTROLP 
+@app.route('/controlsp/<int:controlp_id>', methods=['PUT'])
+@jwt_required()
+def update_controlp(controlp_id=None):
+    if request.method == 'PUT':
+        body = request.json
+        
+        if controlp_id is None:
+            return jsonify({"message":"Bad request"}), 400
+
+        if controlp_id is not None:
+            update_controlp = PetitionControl.query.get(controlp_id)
+            if update_controlp is None:
+                return jsonify({"message":"Not found"}), 404
+            else:
+                update_controlp.process_affected = body["process_affected"]
+                update_controlp.name_customer = body["name_customer"]
+                update_controlp.process_customer = body["process_customer"]
+                update_controlp.date_petition_sent = body["date_petition_sent"]
+                update_controlp.status = body["status"]
+                update_controlp.date_petition_received = body ["date_petition_received"]
+                update_controlp.date_finished_petition = body ["date_finished_petition"]
+                update_controlp.observation = body ["observation"]
+                update_controlp.petition_id = body ["petition_id"]
+                
+
+                try:
+                    db.session.commit()
+                    return jsonify(update_controlp.serialize()), 201
+                except Exception as error:
+                    print(error.args)
+                    return jsonify({"message":f"Error {error.args}"}),500
+
+        return jsonify([]), 200
+    return jsonify([]), 405
+
+
+
+#DELETE CONTROLP
+
+@app.route('/controlsp', methods=(['DELETE']))
+@app.route('/controlsp/<int:controlp_id>', methods=['DELETE'])
+@jwt_required()
+def delete_controlp(controlp_id):
+    if request.method == 'DELETE':
+        request.body = request.json
+
+        if controlp_id is None:
+            return jsonify("the petition doesn`t exist :("), 400
+        
+        if controlp_id is not None:
+            delete_controlp = PetitionControl.query.get(controlp_id) 
+            print ("peticion:",delete_controlp)
+
+            if delete_controlp is None:
+                return jsonify({"Message":"Petition no found"})
+            else:
+                db.session.delete(delete_controlp)
+
+                try:
+                    db.session.commit()
+                    return jsonify("Petition has been deleted succesfully")
+                except Exception as error:
+                    print(error.args)
+                    db.session.rollback()
+                    return jsonify({"message":f"Error {error.args}"}),500
 
 
 

@@ -6,8 +6,8 @@ from sqlalchemy import func
 from flask_sqlalchemy import SQLAlchemy
 import psycopg2
 from alembic import op
-from datetime import datetime
-from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, timezone
+
 
 
 
@@ -43,6 +43,7 @@ class Petition(db.Model):
     __tablename__='petitions'
      
     id = db.Column(db.Integer, primary_key = True, unique=True, nullable=False)
+    created = db.Column(db.DateTime(timezone= True), default=datetime.now(timezone.utc), nullable = False)
     code = db.Column(db.String (150), nullable = False)
     document_title = db.Column(db.String(150), nullable = False)
     change_description = db.Column(db.String(150), nullable = False)
@@ -55,11 +56,12 @@ class Petition(db.Model):
     
 
     def __repr__(self):
-        return f'<Petition {self.code, self.document_title, self.change_description, self.change_justify, self.type_document,self.change_type, self.user_id}>'
+        return f'<Petition {self.created, self.code, self.document_title, self.change_description, self.change_justify, self.type_document,self.change_type, self.user_id}>'
 
     def serialize(self):
         return{
             "id": self.id,
+            "created":self.created,
             "code": self.code,
             'document_title': self.document_title,
             "change_description": self.change_description,
@@ -75,7 +77,7 @@ class PetitionControl(db.Model):
     __tablename__='petition_control'
 
     id = db.Column(db.Integer, primary_key = True, unique=True, nullable=False)
-    date_petition = db.Column(db.DateTime, default=datetime.utcnow, nullable = False)
+    date_petition = db.Column(db.DateTime(timezone= True), default=datetime.now(timezone.utc), nullable = False)
     process_affected =db.Column (db.String(100), nullable = False)
     name_customer = db.Column (db.String(100), nullable = False)
     process_customer = db.Column (db.String(100), nullable = False)
@@ -84,25 +86,12 @@ class PetitionControl(db.Model):
     date_petition_received = db.Column (db.String(100), nullable = False)
     date_finished_petition = db.Column (db.String (100), nullable= False)
     observation = db.Column (db.String (100))
+    updated_at = db.Column(db.DateTime(timezone= True), default=datetime.now(timezone.utc))
     petition_id= db.Column (db.Integer, db.ForeignKey('petitions.id'))
     petition = db.relationship('Petition', back_populates='petitioncontrol')
-    
-    # petition= db.relationship('Petition', back_populates= 'petitioncontrol')
-
-    def __init__(self, process_affected, name_customer, process_customer, status, date_petition_sent, date_petition_received, date_finished_petition, observation, petition_id):
-        self.date_petition: datetime.utcnow()
-        self.process_affected: process_affected
-        self.name_customer: name_customer
-        self.process_customer: process_customer
-        self.status: status
-        self.date_petition_sent: date_petition_sent 
-        self.date_petition_received : date_petition_received
-        self.date_finished_petition: date_finished_petition 
-        self.observation: observation 
-        self.petition_id: petition_id
 
     def __repr__(self):
-        return f'<PetitionControl {self.date_petition, self.process_affected, self.name_customer,self.process_customer, self.status, self.date_petition_sent,self.date_petition_received,self.date_finished_petition, self.observation, self.petition_id}>'
+        return f'<PetitionControl {self.date_petition, self.process_affected, self.name_customer,self.process_customer, self.status, self.date_petition_sent,self.date_petition_received,self.date_finished_petition, self.observation, self.updated_at, self.petition_id}>'
 
     def serialize(self):
         return{
@@ -116,7 +105,20 @@ class PetitionControl(db.Model):
             "date_petition_received": self.date_petition_received,
             "date_finished_petition": self.date_finished_petition,
             "observation": self.observation,
-            "petition_id": self.petition_id
+            "updated_at": self.updated_at,
+            "petition_id": self.petition_id,
         }
 
-    
+    # @property
+    # def status(self):
+    #     return self._status
+
+    # @status.setter
+    # def status(self, value):
+    #     self._status = value
+    #     if value == 'distributed':
+    #         self.distributed_at = datetime.utcnow()
+    #     elif value == 'delivered':
+    #         self.delivered_at = datetime.utcnow()
+    #     elif value == 'distribuido': 
+    #         self.delivered_at = datetime.utcnow()
