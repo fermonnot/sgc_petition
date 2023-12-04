@@ -4,10 +4,12 @@ from flask_migrate import Migrate
 from models import db, User, Petition, PetitionControl
 from dotenv import load_dotenv
 from functools import wraps
+from flask_cors import CORS
 from flask_jwt_extended import create_access_token, current_user, jwt_required, get_jwt_identity, JWTManager, get_current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_httpauth import HTTPBasicAuth
 from datetime import timedelta, datetime
+
 
 load_dotenv()
 
@@ -29,8 +31,7 @@ db.init_app(app)
 
 jwt = JWTManager(app)
 migrate = Migrate(app, db)
-
-
+CORS (app)
 
 
 @app.route('/')
@@ -213,17 +214,8 @@ def logout():
     return jsonify("fue un placer")
 
 
-#LOGOUT
-# @app.route('/logout', methods=['POST'])
-# @jwt_required  # Requiere autenticación JWT para acceder a esta ruta
-# def logout():
-#     jti = get_raw_jwt()['jti']  # Obtiene el ID del token JWT actual
-#     # Aquí puedes realizar las acciones necesarias para invalidar el token JWT actual
-#     # Por ejemplo, puedes agregar el ID del token a una lista negra en tu base de datos
-#     # o en una caché para asegurarte de que el token no sea válido en futuras solicitudes
-#     return {'message': 'Logout exitoso'}
 
-#CONSULT PETITIONS
+#CONSULT PETITIONS  
 
 @app.route('/petitions', methods=['GET'])
 @app.route('/petitions/<int:petition_id>', methods=['GET'])
