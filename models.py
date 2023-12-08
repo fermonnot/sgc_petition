@@ -28,11 +28,11 @@ class User (db.Model):
 
 
     def __repr__(self):
-        return f'<User {self.user_name, self.roles_user}>'
+        return f'<User {self.id, self.user_name, self.roles_user}>'
 
     def serialize(self):
         return{
-            "id": self.id,
+            "id": self.id,  
             "name": self.user_name,
             'roles_user': self.roles_user
         }

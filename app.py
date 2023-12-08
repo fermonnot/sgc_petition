@@ -31,7 +31,8 @@ db.init_app(app)
 
 jwt = JWTManager(app)
 migrate = Migrate(app, db)
-CORS (app)
+CORS(app, resources={r"/*": {"origins":"*"}})
+
 
 
 @app.route('/')
@@ -201,7 +202,7 @@ def login():
             check_password(login_user.password,password) 
             acess_token = create_access_token(identity=login_user.id)
             
-            return jsonify({'token':acess_token}),200
+            return jsonify({'user_id':login_user.id, 'token':acess_token}),200
         else:
             return jsonify ('acceso denegado, verifica tu usuario y contraseña'),400 
 
@@ -256,7 +257,7 @@ def add_petition():
         if body is None or code is None or document_title is None or change_description is None or change_justify is None or type_document is None or change_type is None:
             return jsonify ("Por favor verifica que complete todos los campos e intente de nuevo"),404
         else:
-            request_petition = Petition(code=code, document_title=document_title, change_description=change_description, change_justify=change_justify, type_document=type_document, change_type=change_type, user_id=int(user_id))
+            request_petition = Petition(code=code, document_title=document_title, change_description=change_description, change_justify=change_justify, type_document=type_document, change_type=change_type, user_id=user_id)
             print ("este es el request :", request_petition)
             db.session.add(request_petition)
                            
