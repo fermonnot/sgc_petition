@@ -1,5 +1,5 @@
 import os
-from flask import Flask,render_template,request, jsonify, session
+from flask import Flask,render_template,request, jsonify,request, render_template, flash, redirect, url_for
 from flask_migrate import Migrate
 from models import db, User, Petition, PetitionControl
 from dotenv import load_dotenv
@@ -31,7 +31,7 @@ db.init_app(app)
 
 jwt = JWTManager(app)
 migrate = Migrate(app, db)
-CORS(app, resources={r"/*": {"origins":"*"}})
+CORS(app)
 
 
 
@@ -197,12 +197,13 @@ def login():
         roles_user =body.get('role')
         print ("role:", roles_user)
 
-        login_user = User.query.filter_by(user_name=user_name, password=password).one_or_none() 
-        if login_user:
-            check_password(login_user.password,password) 
+        login_user = User.query.filter_by(user_name=user_name).one_or_none() 
+        
+        if login_user and check_password_hash(login_user.password,password) == True:
+            
             acess_token = create_access_token(identity=login_user.id)
             
-            return jsonify({'user_id':login_user.id, 'token':acess_token}),200
+            return jsonify({'user_id':login_user.id, 'token':acess_token, "roles_user":login_user.roles_user}),200
         else:
             return jsonify ('acceso denegado, verifica tu usuario y contraseña'),400 
 
@@ -305,6 +306,7 @@ def update_petition(petition_id=None):
 @app.route('/petitions', methods=(['DELETE']))
 @app.route('/petitions/<int:petition_id>', methods=['DELETE'])
 @jwt_required()
+@roles_required('admin') 
 def delete_petition(petition_id):
     if request.method == 'DELETE':
         request.body = request.json
