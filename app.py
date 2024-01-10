@@ -4,11 +4,11 @@ from flask_migrate import Migrate
 from models import db, User, Petition, PetitionControl
 from dotenv import load_dotenv
 from functools import wraps
-from flask_cors import CORS
 from flask_jwt_extended import create_access_token, current_user, jwt_required, get_jwt_identity, JWTManager, get_current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_httpauth import HTTPBasicAuth
 from datetime import timedelta, datetime
+from flask_cors import CORS, cross_origin
 
 
 load_dotenv()
@@ -355,7 +355,9 @@ def handle_controlp(controlp_id = None):
 
 
 #ADD CONTROLP 
-@app.route('/controlsp', methods=['POST'])
+
+@app.route('/controlp', methods=['POST'])
+@cross_origin()
 @jwt_required()
 def add_controlp():
     if request.method == 'POST':
