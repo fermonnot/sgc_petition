@@ -1,7 +1,8 @@
 import os
 from flask import Flask,render_template,request, jsonify,request, render_template, flash, redirect, url_for
 from flask_migrate import Migrate
-from models import db, User, Petition, PetitionControl
+import pytz
+from models import db, User, Petition, PetitionControl, Game
 from dotenv import load_dotenv
 from functools import wraps
 from flask_jwt_extended import create_access_token, current_user, jwt_required, get_jwt_identity, JWTManager, get_current_user
@@ -9,6 +10,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_httpauth import HTTPBasicAuth
 from datetime import timedelta, datetime
 from flask_cors import CORS, cross_origin
+from sqlalchemy import event
+from pytz import timezone
 
 
 load_dotenv()
@@ -34,6 +37,8 @@ migrate = Migrate(app, db)
 CORS(app)
 
 
+def get_current_time():
+   return datetime.now(pytz.timezone('America/Caracas'))
 
 @app.route('/')
 def  hello():
@@ -239,6 +244,27 @@ def handle_petition(petition_id = None):
         return jsonify({"message":" Petition has not found"}), 404 
 
 
+#CONSULT PETITION ACTIVE
+    
+@app.route('/petitions-active', methods=['GET'])
+@app.route('/petitions-active/<int:petition_id>', methods=['GET'])
+@jwt_required()
+def handle_active_petition(petition_id = None):
+    if request.method == 'GET':
+        
+        if petition_id is None:
+            active_petitions = Petition()
+            active_petitions= active_petitions.query.filter(Petition.is_active == True).all()
+
+            return jsonify(list(map(lambda item: item.serialize(), active_petitions))) , 200
+        else:
+            petition = Petition()
+            petition = petition.query.get(petition_id)
+            if petition:
+                return jsonify(petition.serialize())
+            
+        return jsonify({"message":" Petition has not found"}), 404 
+    
 #ADD PETITIONS
 @app.route('/petition', methods=['POST'])
 @jwt_required()
@@ -271,7 +297,8 @@ def add_petition():
 
 
 #UPDATE PETITIONS
-@app.route('/petitions/<int:petition_id>', methods=['PUT'])
+@app.route('/petitions-active/<int:petition_id>', methods=['PATCH','PUT'])
+@cross_origin()
 @jwt_required()
 def update_petition(petition_id=None):
     if request.method == 'PUT':
@@ -285,12 +312,12 @@ def update_petition(petition_id=None):
             if update_petition is None:
                 return jsonify({"message":"Not found"}), 404
             else:
-                update_petition.code = body["code"]
-                update_petition.document_title = body["document_title"]
+                update_petition.code = body["code"] 
                 update_petition.change_description = body["change_description"]
                 update_petition.change_justify = body["change_justify"]
                 update_petition.type_document = body["type_document"]
                 update_petition.change_type = body ["change_type"]
+                update_petition.is_active = body["is_active"]
 
                 try:
                     db.session.commit()
@@ -298,15 +325,45 @@ def update_petition(petition_id=None):
                 except Exception as error:
                     print(error.args)
                     return jsonify({"message":f"Error {error.args}"}),500
+        return jsonify([]), 200            
+    elif request.method == 'PATCH':
+        if petition_id is None:
+            return jsonify({"message":"Bad request"}), 400
 
+        if petition_id is not None:
+            update_petition = Petition.query.get(petition_id)
+            if update_petition is None:
+                return jsonify({"message":"Not found"}), 404
+            
+            data = request.get_json()
+            try:
+                if'code' in data:
+                    update_petition.code = data["code"]
+                if 'document_title' in data:   
+                    update_petition.document_title = data["document_title"]
+                if 'change_description' in data:
+                    update_petition.change_description = data["change_description"]
+                if 'change_justify' in data:
+                    update_petition.change_justify = data["change_justify"]
+                if 'type_document' in data:
+                    update_petition.type_document = data["type_document"]
+                if 'change_type' in data:
+                    update_petition.change_type = data ["change_type"]
+                if 'is_active' in data:
+                    update_petition.is_active = data["is_active"]
+                db.session.commit()   
+                return jsonify({'message': 'Petition replaced successfully'}), 202 
+            except Exception as error:
+                print(error.args)
+                return jsonify({"message":f"Error {error.args}"}),500
         return jsonify([]), 200
     return jsonify([]), 405
 
 #DELETE PETITION
-@app.route('/petitions', methods=(['DELETE']))
-@app.route('/petitions/<int:petition_id>', methods=['DELETE'])
+@app.route('/petitions-active', methods=(['DELETE']))
+@app.route('/petitions-active/<int:petition_id>', methods=['DELETE'])
 @jwt_required()
-@roles_required('admin') 
+@roles_required('admin','calidad') 
 def delete_petition(petition_id):
     if request.method == 'DELETE':
         request.body = request.json
@@ -331,7 +388,7 @@ def delete_petition(petition_id):
                     db.session.rollback()
                     return jsonify({"message":f"Error {error.args}"}),500
                 
-#CONSULT CONTROLP
+#CONSULT CONTROLP ACTIVE
 
 @app.route('/controlsp', methods=['GET'])
 @app.route('/controlsp/<int:controlp_id>', methods=['GET'])
@@ -351,6 +408,7 @@ def handle_controlp(controlp_id = None):
                 return jsonify(control_p.serialize())
             
         return jsonify({"message":" Petition has not found"}), 404 
+    
 
 
 
@@ -379,16 +437,22 @@ def add_controlp():
             request_petition_control = PetitionControl(process_affected=process_affected, name_customer=name_customer, process_customer=process_customer, status=status, date_petition_sent=date_petition_sent, date_petition_received=date_petition_received, date_finished_petition=date_finished_petition, observation=observation, petition_id= int(petition_id))
             print ("este es el request :", request_petition_control)
             db.session.add(request_petition_control)
+
                            
             try:
                 db.session.commit()
                 return jsonify("good job bro (Y)!!"), 201
             except Exception as error:
                 db.session.rollback(),500
+
+        
     return jsonify(), 201
 
 
 #UPDATE CONTROLP 
+
+
+
 @app.route('/controlsp/<int:controlp_id>', methods=['PUT'])
 @jwt_required()
 def update_controlp(controlp_id=None):
@@ -454,6 +518,110 @@ def delete_controlp(controlp_id):
                     print(error.args)
                     db.session.rollback()
                     return jsonify({"message":f"Error {error.args}"}),500
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############PRUEBA
+                
+
+
+
+
+
+
+
+                
+@app.route('/game', methods=['POST'])
+@jwt_required()
+def add_game():
+    if request.method == 'POST':
+        body = request.json
+
+        name_game = body.get('name_game', None)
+        type_game = body.get('type_game', None)
+        
+        if name_game is None or type_game is None:
+            return jsonify ("Por favor verifica que complete todos los campos e intente de nuevo"),404
+        else:
+            request_game = Game(name_game=name_game, type_game=type_game)
+            print ("este es el request :", request_game)
+            db.session.add(request_game)
+                           
+            try:
+                db.session.commit()
+                return jsonify("good job bro (Y)!!"), 201
+            except Exception as error:
+                db.session.rollback(),500
+    return jsonify(), 201
+
+
+
+@app.route('/game', methods=['GET'])
+@app.route('/game/<int:game_id>', methods=['GET'])
+@jwt_required()
+def handle_game(game_id = None):
+    if request.method == 'GET':
+        
+        if game_id is None:
+            games = Game()
+            games= games.query.all()
+
+            return jsonify(list(map(lambda item: item.serialize(), games))) , 200
+        else:
+            game = Game()
+            game = game.query.get(game_id)
+            if game:
+                return jsonify(game.serialize())
+            
+        return jsonify({"message":" Petition has not found"}), 404 
+
 
 
 
