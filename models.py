@@ -52,7 +52,7 @@ class Petition(db.Model):
     created = db.Column(db.DateTime(timezone=True), default=get_current_time, nullable=False)
     code = db.Column(db.String (150), nullable = False)
     document_title = db.Column(db.String(150), nullable = False)
-    change_description = db.Column(db.String(150), nullable = False)
+    change_description = db.Column(db.String(500), nullable = False)
     change_justify = db.Column(db.String(150), nullable = False)
     type_document = db.Column(EnumType('formulario','procedimiento','instrucciont','otro', name= 'type_document'))
     change_type = db.Column (EnumType('creacion','actualizacion','eliminacion', name = 'change_type'))
@@ -98,7 +98,7 @@ class PetitionControl(db.Model):
     petition_id= db.Column (db.Integer, db.ForeignKey('petitions.id'))
     petition = db.relationship('Petition', back_populates='petitioncontrol')
 
-    def set_timestamp(mapper, connection, target):
+    def set_timestamp(mapper, connection, target):  
         target.updated_at = datetime.utcnow()
 
     def __repr__(self):

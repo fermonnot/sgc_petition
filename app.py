@@ -451,9 +451,8 @@ def add_controlp():
 
 #UPDATE CONTROLP 
 
-
-
-@app.route('/controlsp/<int:controlp_id>', methods=['PUT'])
+@app.route('/controlsp/<int:controlp_id>', methods=['PATCH', 'PUT'])
+@cross_origin()
 @jwt_required()
 def update_controlp(controlp_id=None):
     if request.method == 'PUT':
@@ -483,9 +482,43 @@ def update_controlp(controlp_id=None):
                     return jsonify(update_controlp.serialize()), 201
                 except Exception as error:
                     print(error.args)
-                    return jsonify({"message":f"Error {error.args}"}),500
+                    return jsonify({"message":f"Error {error.args}"}),500                 
+    elif request.method == 'PATCH':
+        if  controlp_id is None:
+            return jsonify({"message":"Bad request"}), 400
 
-        return jsonify([]), 200
+        if controlp_id is not None:
+            update_controlp = PetitionControl.query.get(controlp_id)
+            if update_controlp is None:
+                return jsonify({"message":"Not found"}), 404
+            
+            data = request.get_json()
+            try:
+                if 'process_affected' in data:
+                    update_controlp.process_affected = data["process_affected"]
+                if 'name_customer' in data:   
+                    update_controlp.name_customer = data["name_customer"]
+                if 'process_customer' in data:
+                    update_controlp.process_customer = data["process_customer"]
+                if 'date_petition_sent' in data:
+                    update_controlp.date_petition_sent = data["date_petition_sent"]
+                if 'status' in data:
+                    update_controlp.status = data["status"]
+                if 'date_petition_received' in data:
+                    update_controlp.date_petition_received = data["date_petition_received"]
+                if 'date_finished_petition' in data:
+                    update_controlp.date_finished_petition = data ["date_finished_petition"]
+                if 'observation' in data:
+                    update_controlp.observation = data["observation"]
+                if 'petition_id' in data:
+                    update_controlp.petition_id = data["petition_id"]
+                db.session.commit()   
+                return jsonify({'message': 'ControlP replaced successfully'}), 202 
+            except Exception as error:
+                print(error.args)
+                return jsonify({"message":f"Error {error.args}"}),500
+        return jsonify([]), 200        
+      
     return jsonify([]), 405
 
 
