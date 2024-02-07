@@ -28,7 +28,7 @@ class User (db.Model):
 
     id = db.Column(db.Integer, primary_key = True, unique=True, nullable=False)
     user_name = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(300), unique=True, nullable=False)
+    password = db.Column(db.String(300), nullable=False)
     roles_user= db.Column(EnumType('usuario', 'calidad', 'admin', name='role'))
     petition= db.relationship('Petition', back_populates='user')
 

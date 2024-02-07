@@ -119,10 +119,16 @@ def add_user():
         if body is None or user_name is None or password is None or roles_user is None:
             return jsonify ("Por favor verifica que complete todos los campos e intente de nuevo"),404
         else:
-            password= set_password(password)
-            request_user= User(user_name=user_name, password=password, roles_user=roles_user)
-            print(request_user)
-            db.session.add(request_user)
+            user_exists = User.query.filter_by(user_name=user_name).first()
+            if user_exists:
+            
+             return 'El correo electrónico ya está registrado. Por favor, elige otro.', 426
+            
+            else:
+                password= set_password(password)
+                request_user= User(user_name=user_name, password=password, roles_user=roles_user)
+                print(request_user)
+                db.session.add(request_user)
 
             try:
                 db.session.commit()
